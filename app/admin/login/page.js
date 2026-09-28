@@ -39,6 +39,7 @@ export default function AdminLogin() {
 
       router.replace("/admin/dashboard");
       router.refresh();
+      
     } catch (err) {
       setError(err.message || "Something went wrong");
       setLoading(false);
