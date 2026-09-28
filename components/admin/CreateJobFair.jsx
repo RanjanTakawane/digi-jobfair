@@ -69,9 +69,7 @@ export default function CreateJobFair({
       setLoading(true);
       setError("");
 
-      console.log("Creating Job Fair:", form);
-
-      const response = await fetch("/api/v1/job-fairs", {
+      const response = await fetch("/api/v1/admin/job-fairs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,8 +101,6 @@ export default function CreateJobFair({
       }
 
       const data = await response.json();
-
-      console.log("Job Fair Created:", data);
 
       if (onCreated) {
         onCreated(data);

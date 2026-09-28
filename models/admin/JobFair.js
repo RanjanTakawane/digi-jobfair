@@ -182,6 +182,14 @@ const JobFairSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+
+    // Admin who created the job fair (set server-side from the session)
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
   },
   {
     timestamps: true,

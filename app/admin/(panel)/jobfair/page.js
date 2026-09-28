@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   CalendarDays,
   MapPin,
@@ -12,8 +11,10 @@ import {
   Users,
   Eye,
   RefreshCw,
+  QrCode,
 } from "lucide-react";
 import JobFairModal from "@/components/admin/JobFairModal";
+import RegistrationQrModal from "@/components/admin/RegistrationQrModal";
 
 export default function JobFair() {
   const [jobFairs, setJobFairs] = useState([]);
@@ -23,6 +24,7 @@ export default function JobFair() {
   const limit = 10;
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [qrJobFair, setQrJobFair] = useState(null);
   const [pagination, setPagination] = useState({
     total: 0,
     totalPages: 1,
@@ -37,7 +39,7 @@ export default function JobFair() {
         setLoading(true);
 
         const response = await fetch(
-          `/api/v1/job-fairs?page=${page}&limit=${limit}`,
+          `/api/v1/admin/job-fairs?page=${page}&limit=${limit}`,
           {
             method: "GET",
             cache: "no-store",
@@ -49,8 +51,6 @@ export default function JobFair() {
         if (!response.ok) {
           throw new Error(data.message || "Failed to fetch job fairs");
         }
-
-        console.log("Job fairs response:", data);
 
         setJobFairs(data.data || []);
 
@@ -177,7 +177,7 @@ export default function JobFair() {
           </div>
 
           <button
-            onClick={() => fetchJobFairs(page)}
+            onClick={() => setRefreshKey((prev) => prev + 1)}
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-blue-600"
             title="Refresh"
           >
@@ -311,14 +311,35 @@ export default function JobFair() {
                       </div>
                     </div>
 
-                    <Link
-                      href={`/admin/job-fairs/${jobFair._id}`}
-                      className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 sm:col-span-1"
+                    <span
+                      title="Details page coming soon"
+                      className="col-span-2 inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400 sm:col-span-1"
                     >
                       <Eye size={17} />
                       View Details
-                    </Link>
+                    </span>
                   </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3 border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setQrJobFair(jobFair)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  >
+                    <QrCode size={17} />
+                    Candidate Registration QR
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled
+                    title="Company registration is coming soon"
+                    className="inline-flex cursor-not-allowed items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-400"
+                  >
+                    <QrCode size={17} />
+                    Company Registration QR
+                  </button>
                 </div>
               </div>
             ))}
@@ -389,8 +410,11 @@ export default function JobFair() {
       <JobFairModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-        onCreated={() => {
+        onCreated={(created) => {
           setCreateModalOpen(false);
+
+          // show the candidate registration QR right after creating
+          if (created?.data) setQrJobFair(created.data);
 
           // return to first page so newest job fair can appear
           setPage(1);
@@ -398,6 +422,18 @@ export default function JobFair() {
           // refresh list
           setRefreshKey((prev) => prev + 1);
         }}
+      />
+
+      <RegistrationQrModal
+        isOpen={Boolean(qrJobFair)}
+        onClose={() => setQrJobFair(null)}
+        title="Candidate Registration QR"
+        jobFairName={qrJobFair?.name}
+        path={
+          qrJobFair
+            ? `/candidate/register/${qrJobFair.candidateRegistrationToken}`
+            : ""
+        }
       />
     </div>
   );

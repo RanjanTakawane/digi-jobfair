@@ -1,95 +1,48 @@
-import { JobFairRepository } from "@/repositories/jobFair.repository";
+import { JobFairRepository } from "@/repositories/admin/jobFair";
 
 import { generateSecureToken } from "@/utils/generateToken";
 
 import { generateJobFairCode } from "@/utils/generateCode";
 
+const MAX_CODE_ATTEMPTS = 5;
+
 export class JobFairService {
-
-    
-  static async createJobFair(data) {
-    let jobFairCode;
-
-    // Make sure generated code isn't already used
-    while (true) {
-      jobFairCode = generateJobFairCode();
-
-      const existing = await JobFairRepository.getByCode(jobFairCode);
-
-      if (!existing) break;
-    }
-
+  /**
+   * @param data       allowlisted, validated fields (see validators/admin/jobFair.js)
+   * @param createdBy  authenticated admin's _id (never from the request body)
+   */
+  static async createJobFair(data, createdBy) {
     const candidateRegistrationToken = generateSecureToken();
-
     const companyParticipationToken = generateSecureToken();
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const candidateRegistrationUrl = `${baseUrl}/candidate/register/${candidateRegistrationToken}`;
-
-    const companyParticipationUrl = `${baseUrl}/company/participate/${companyParticipationToken}`;
-
     const jobFairData = {
-      jobFairCode,
-
-      name: data.name.trim(),
-
-      description: data.description?.trim() || "",
-
-      startDate: new Date(data.startDate),
-      endDate: new Date(data.endDate),
-
-      startTime: data.startTime || "",
-      endTime: data.endTime || "",
-
-      registrationStartDate: data.registrationStartDate
-        ? new Date(data.registrationStartDate)
-        : null,
-
-      registrationEndDate: data.registrationEndDate
-        ? new Date(data.registrationEndDate)
-        : null,
-
-      venueName: data.venueName.trim(),
-
-      address: data.address?.trim() || "",
-
-      city: data.city?.trim() || "",
-
-      district: data.district?.trim() || "",
-
-      state: data.state?.trim() || "",
-
-      pincode: data.pincode?.trim() || "",
-
-      organizerName: data.organizerName?.trim() || "",
-
-      organizerEmail: data.organizerEmail?.trim().toLowerCase() || "",
-
-      organizerPhone: data.organizerPhone?.trim() || "",
-
-      expectedCandidates: Number(data.expectedCandidates || 0),
-
-      expectedCompanies: Number(data.expectedCompanies || 0),
+      ...data,
 
       candidateRegistrationToken,
-
       companyParticipationToken,
+      candidateRegistrationUrl: `${baseUrl}/candidate/register/${candidateRegistrationToken}`,
+      companyParticipationUrl: `${baseUrl}/company/participate/${companyParticipationToken}`,
 
-      candidateRegistrationUrl,
-
-      companyParticipationUrl,
-
-      status: data.status || "draft",
+      createdBy,
     };
 
-    console.log("Creating Job Fair:", jobFairData);
+    // The unique index on jobFairCode is the source of truth; on the (very
+    // unlikely) collision, retry with a fresh code a bounded number of times.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await JobFairRepository.create({
+          ...jobFairData,
+          jobFairCode: generateJobFairCode(),
+        });
+      } catch (error) {
+        const isCodeCollision =
+          error?.code === 11000 && error.keyPattern?.jobFairCode;
 
-    const createdJobFair = await JobFairRepository.create(jobFairData);
-
-    console.log("Job Fair created successfully:", createdJobFair._id);
-
-    return createdJobFair;
+        if (!isCodeCollision || attempt >= MAX_CODE_ATTEMPTS) throw error;
+      }
+    }
   }
 
   static async getJobFairs({ page, limit }) {

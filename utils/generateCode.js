@@ -1,9 +1,17 @@
+import { randomInt } from "crypto";
+
+// No 0/O/1/I to keep the code readable
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+// e.g. JF-26-K7M2QX
 export function generateJobFairCode() {
-  const year = new Date().getFullYear();
+  const year = String(new Date().getFullYear()).slice(-2);
 
-  const random = Math.floor(
-    100000 + Math.random() * 900000
-  );
+  let suffix = "";
 
-  return `JF-${year}-${random}`;
+  for (let i = 0; i < 6; i++) {
+    suffix += ALPHABET[randomInt(ALPHABET.length)];
+  }
+
+  return `JF-${year}-${suffix}`;
 }

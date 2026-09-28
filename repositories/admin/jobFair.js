@@ -1,4 +1,4 @@
-import JobFair from "@/models/JobFair";
+import JobFair from "@/models/admin/JobFair";
 
 export class JobFairRepository {
   static async create(data) {

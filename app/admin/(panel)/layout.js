@@ -6,8 +6,8 @@ import {
   Building2,
   Users,
   FileBarChart,
-  LogOut,
 } from "lucide-react";
+import LogoutButton from "@/components/admin/LogoutButton";
 
 export default function AdminLayout({ children }) {
   const menu = [
@@ -74,10 +74,7 @@ export default function AdminLayout({ children }) {
         </nav>
 
         <div className="absolute bottom-0 left-0 w-full border-t border-slate-100 p-4">
-          <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 transition hover:bg-red-50 hover:text-red-600">
-            <LogOut size={19} />
-            Logout
-          </button>
+          <LogoutButton />
         </div>
       </aside>
 
